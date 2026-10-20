@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PustakaKita - Sistem Informasi Perpustakaan Digital Sekolah</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📚</text></svg>">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Chart.js for Admin Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <!-- ============================================================== -->
+  <!-- TOP ANNOUNCEMENT / SIMULATOR BANNER                           -->
+  <!-- ============================================================== -->
+  <div class="bg-slate-900 text-slate-200 text-xs py-2 px-4 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-semibold border border-blue-500/30">
+          <i class="fa-solid fa-database text-[10px]"></i> Mode Dump Data
+        </span>
+        <span class="hidden sm:inline text-slate-400">Siap dihubungkan ke PHP & MySQL (Database Dump: <code class="text-blue-300 font-mono">database/pustakakita.sql</code>)</span>
+      </div>
+
+      <div class="flex items-center gap-3 ml-auto">
+        <!-- Role Simulator Dropdown -->
+        <div class="flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
+          <label for="role-quick-switcher" class="text-slate-400 text-[11px] font-medium hidden md:inline">Ganti Pengguna Demo:</label>
+          <select id="role-quick-switcher" class="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer">
+            <option value="3" class="bg-slate-900 text-white">👨‍🎓 Budi Pratama (Siswa - XII RPL 1)</option>
+            <option value="4" class="bg-slate-900 text-white">👩‍🎓 Siti Nurhaliza (Siswa - XI IPA 2)</option>
+            <option value="2" class="bg-slate-900 text-white">👨‍🏫 Drs. Hendra Gunawan (Guru Bahasa)</option>
+            <option value="1" class="bg-slate-900 text-white">👩‍💼 Dewi Sartika (Pustakawan / Admin)</option>
+          </select>
+        </div>
+
+        <!-- Reset Button -->
+        <button id="btn-reset-dump-data" class="text-[11px] text-slate-400 hover:text-white transition flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700" title="Reset ke data awal">
+          <i class="fa-solid fa-arrows-rotate"></i> <span class="hidden sm:inline">Reset Demo</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MAIN NAVBAR                                                    -->
+  <!-- ============================================================== -->
+  <header class="sticky top-0 z-40 glass-nav border-b border-slate-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Brand Logo -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+            <i class="fa-solid fa-book-bookmark text-lg"></i>
+          </div>
+          <div>
+            <span class="font-extrabold text-xl tracking-tight text-slate-900">Pustaka<span class="text-blue-600">Kita</span></span>
+            <span class="block text-[10px] text-slate-400 font-medium tracking-wider uppercase">Sistem Perpustakaan Sekolah</span>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs Desktop -->
+        <nav class="hidden md:flex items-center gap-1 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/80">
+          <button data-tab="katalog" class="nav-link-btn px-4 py-2 rounded-xl text-xs font-semibold bg-blue-600 text-white shadow-sm transition flex items-center gap-2">
+            <i class="fa-solid fa-compass"></i> Katalog Buku
+          </button>
+          
+          <button data-tab="peminjaman" class="nav-link-btn nav-user-only px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-2">
+            <i class="fa-solid fa-bookmark"></i> Peminjaman Saya
+          </button>
+
+          <button data-tab="rekomendasi" class="nav-link-btn nav-user-only px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-2">
+            <i class="fa-solid fa-graduation-cap"></i> Rekomendasi Guru
+          </button>
+
+          <!-- Admin Only Menu -->
+          <button data-tab="admin-dashboard" class="nav-link-btn nav-admin-only hidden px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-2">
+            <i class="fa-solid fa-chart-pie text-purple-600"></i> Dashboard Analitik Admin
+          </button>
+
+          <button data-tab="profil" class="nav-link-btn px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition flex items-center gap-2">
+            <i class="fa-regular fa-user"></i> Profil
+          </button>
+        </nav>
+
+        <!-- Right Side: Notifications & Current User Info -->
+        <div class="flex items-center gap-3">
+          <!-- Notification Bell -->
+          <button id="btn-notification-trigger" class="relative p-2.5 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-slate-100 transition" title="Pusat Pengingat & Notifikasi">
+            <i class="fa-regular fa-bell text-lg"></i>
+            <span id="nav-notif-count" class="absolute top-1.5 right-1.5 w-4 h-4 bg-rose-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center pulse-badge">
+              2
+            </span>
+          </button>
+
+          <!-- User Profile Summary Pill -->
+          <div onclick="window.AppActions.switchTab('profil')" class="flex items-center gap-3 pl-2 cursor-pointer group">
+            <img id="nav-user-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" alt="Avatar" class="w-9 h-9 rounded-full object-cover ring-2 ring-blue-600/30 shadow-sm" />
+            <div class="hidden lg:block text-left">
+              <div id="nav-user-name" class="font-bold text-xs text-slate-800 group-hover:text-blue-600 transition">Budi Pratama</div>
+              <span id="nav-user-role-badge" class="text-xs font-semibold px-2 py-0.5 rounded-full border bg-blue-100 text-blue-700 border-blue-200">Siswa</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Navigation Bar -->
+    <div class="md:hidden border-t border-slate-200 bg-white px-2 py-2 flex items-center justify-around text-xs">
+      <button data-tab="katalog" class="nav-link-btn p-2 rounded-lg text-blue-600 font-semibold flex flex-col items-center">
+        <i class="fa-solid fa-compass text-base mb-1"></i>
+        <span>Katalog</span>
+      </button>
+      <button data-tab="peminjaman" class="nav-link-btn nav-user-only p-2 rounded-lg text-slate-600 font-semibold flex flex-col items-center">
+        <i class="fa-solid fa-bookmark text-base mb-1"></i>
+        <span>Pinjaman</span>
+      </button>
+      <button data-tab="rekomendasi" class="nav-link-btn nav-user-only p-2 rounded-lg text-slate-600 font-semibold flex flex-col items-center">
+        <i class="fa-solid fa-graduation-cap text-base mb-1"></i>
+        <span>Guru</span>
+      </button>
+      <button data-tab="admin-dashboard" class="nav-link-btn nav-admin-only hidden p-2 rounded-lg text-purple-600 font-semibold flex flex-col items-center">
+        <i class="fa-solid fa-chart-pie text-base mb-1"></i>
+        <span>Admin</span>
+      </button>
+      <button data-tab="profil" class="nav-link-btn p-2 rounded-lg text-slate-600 font-semibold flex flex-col items-center">
+        <i class="fa-regular fa-user text-base mb-1"></i>
+        <span>Profil</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============================================================== -->
+  <!-- MAIN CONTENT CONTAINER                                         -->
+  <!-- ============================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- ============================================================ -->
+    <!-- VIEW 1: KATALOG & PENCARIAN BUKU                            -->
+    <!-- ============================================================ -->
+    <section id="view-katalog" class="space-y-8">
+      
+      <!-- Hero Banner -->
+      <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 p-8 md:p-12 text-white shadow-xl">
+        <div class="relative z-10 max-w-2xl">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-blue-200 text-xs font-semibold backdrop-blur-sm mb-4 border border-white/20">
+            <i class="fa-solid fa-sparkles text-amber-400"></i> Perpustakaan Digital Generasi Baru
+          </span>
+          <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight mb-4">
+            Jelajahi Ribuan Buku Tanpa Batas Antre.
+          </h1>
+          <p class="text-blue-100 text-sm md:text-base leading-relaxed mb-8">
+            Cari judul, cek ketersediaan stok fisik di rak secara real-time, dan pesan (hold) buku favorit Anda sebelum mengambilnya di loket sekolah.
+          </p>
+
+          <!-- Search Bar in Hero -->
+          <div class="bg-white rounded-2xl p-2 shadow-2xl flex flex-col sm:flex-row items-center gap-2 border border-white/20">
+            <div class="flex-1 flex items-center gap-3 px-3 w-full">
+              <i class="fa-solid fa-magnifying-glass text-slate-400 text-lg"></i>
+              <input type="text" id="search-input" placeholder="Cari berdasarkan judul, penulis, penerbit, atau ISBN..." class="w-full py-2.5 text-slate-800 placeholder-slate-400 text-sm focus:outline-none bg-transparent">
+            </div>
+            <button class="w-full sm:w-auto px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center justify-center gap-2 shadow-md">
+              <i class="fa-solid fa-sliders"></i> Cari Koleksi
+            </button>
+          </div>
+        </div>
+
+        <!-- Decorative background shapes -->
+        <div class="absolute -right-10 -bottom-10 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute right-10 top-1/2 -translate-y-1/2 hidden lg:block opacity-25 pointer-events-none">
+          <i class="fa-solid fa-book-open-reader text-[220px]"></i>
+        </div>
+      </div>
+
+      <!-- Quick Category Chips -->
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-shapes text-blue-600"></i> Kategori Koleksi
+          </h2>
+          <span class="text-xs text-slate-500">Pilih kategori untuk memfilter</span>
+        </div>
+        <div id="category-chips-container" class="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+          <!-- Dynamically populated chips -->
+        </div>
+      </div>
+
+      <!-- Filters & Sort Bar -->
+      <div class="bg-white rounded-2xl border border-slate-200/80 p-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-2 cursor-pointer select-none">
+            <input type="checkbox" id="filter-available-only" class="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300">
+            <span class="text-xs font-semibold text-slate-700">Hanya Buku yang Tersedia</span>
+          </label>
+          <span class="text-slate-300">|</span>
+          <span id="katalog-total-count" class="text-xs font-medium text-slate-500">
+            Memuat buku...
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2 ml-auto">
+          <label for="sort-select" class="text-xs text-slate-500 font-medium">Urutkan:</label>
+          <select id="sort-select" class="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="populer">Paling Banyak Dibaca</option>
+            <option value="judul_asc">Judul Buku (A - Z)</option>
+            <option value="tahun_desc">Tahun Terbit Terbaru</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Book Grid Container -->
+      <div id="book-catalog-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <!-- Rendered via JavaScript -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="catalog-empty-state" class="hidden text-center py-16 bg-white rounded-3xl border border-slate-200/80 p-8 shadow-sm">
+        <div class="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4 text-2xl">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+        <h3 class="text-base font-bold text-slate-800 mb-1">Buku Tidak Ditemukan</h3>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto mb-4">
+          Coba gunakan kata kunci pencarian yang lain atau sesuaikan filter kategori dan status ketersediaan.
+        </p>
+      </div>
+
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 2: PEMINJAMAN SAYA & RIWAYAT PENGGUNA                  -->
+    <!-- ============================================================ -->
+    <section id="view-peminjaman" class="hidden space-y-6">
+      
+      <!-- View Header -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider">Aktivitas Mandiri</span>
+          <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Sirkulasi & Peminjaman Saya</h2>
+          <p class="text-xs text-slate-500 mt-1">
+            Pantau status hold pemesanan online, batas waktu tenggat pengembalian, dan riwayat peminjaman buku Anda.
+          </p>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-200 p-3.5 rounded-2xl flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-calendar-days text-base"></i>
+          </div>
+          <div class="text-xs">
+            <div class="font-bold text-slate-800">Aturan Pengembalian</div>
+            <div class="text-slate-500">Maksimal peminjaman 7 hari • Denda keterlambatan Rp 1.000 / hari</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- List Container -->
+      <div id="user-loan-list" class="space-y-4">
+        <!-- Rendered via JavaScript -->
+      </div>
+
+      <!-- Empty Loans -->
+      <div id="empty-user-loans" class="hidden text-center py-16 bg-white rounded-3xl border border-slate-200/80 p-8 shadow-sm">
+        <div class="w-16 h-16 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-4 text-2xl">
+          <i class="fa-solid fa-box-open"></i>
+        </div>
+        <h3 class="text-base font-bold text-slate-800 mb-1">Belum Ada Peminjaman Aktif</h3>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto mb-6">
+          Anda sedang tidak meminjam atau memesan buku saat ini. Silakan kunjungi katalog untuk mencari bacaan menarik.
+        </p>
+        <button onclick="window.AppActions.switchTab('katalog')" class="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold shadow-md hover:bg-blue-700 transition">
+          Jelajahi Katalog Buku
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 3: REKOMENDASI GURU                                    -->
+    <!-- ============================================================ -->
+    <section id="view-rekomendasi" class="hidden space-y-6">
+      
+      <div class="bg-gradient-to-r from-emerald-700 to-teal-800 rounded-3xl p-6 md:p-8 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-emerald-100 text-xs font-semibold mb-3 border border-white/20">
+            <i class="fa-solid fa-lightbulb text-amber-300"></i> Rekomendasi Pendidik
+          </span>
+          <h2 class="text-2xl font-bold">Rekomendasi Bacaan dari Dewan Guru</h2>
+          <p class="text-emerald-100 text-xs mt-1 max-w-xl">
+            Buku-buku pilihan yang dikurasi langsung oleh Bapak/Ibu guru untuk menunjang penguasaan mata pelajaran dan literasi kebangsaan.
+          </p>
+        </div>
+
+        <!-- Add recommendation button (visible only to Teacher) -->
+        <button id="btn-open-add-rec" class="hidden px-5 py-3 rounded-2xl bg-white text-emerald-800 hover:bg-emerald-50 font-bold text-xs shadow-md transition flex items-center gap-2">
+          <i class="fa-solid fa-plus-circle"></i> Tambah Rekomendasi
+        </button>
+      </div>
+
+      <!-- Recommendation Cards Grid -->
+      <div id="teacher-rec-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Rendered via JavaScript -->
+      </div>
+
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 4: DASHBOARD ANALITIK & MANAJEMEN ADMIN / PUSTAKAWAN   -->
+    <!-- ============================================================ -->
+    <section id="view-admin-dashboard" class="hidden space-y-8">
+      
+      <!-- Admin Header -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 p-6 md:p-8 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold text-purple-600 uppercase tracking-wider">Pustakawan Command Center</span>
+          <h2 class="text-2xl font-bold text-slate-900 mt-0.5">Dashboard Analitik Perpustakaan</h2>
+          <p class="text-xs text-slate-500 mt-1">
+            Pantau statistik sirkulasi, kelola transaksi peminjaman & pengembalian, serta kelola basis data buku secara menyeluruh.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button id="btn-add-book-modal" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Tambah Buku Baru
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 KPI Stats Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Card 1 -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl shrink-0">
+            <i class="fa-solid fa-book-bookmark"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-medium">Total Judul Buku</div>
+            <div id="stat-total-books" class="text-2xl font-extrabold text-slate-800">0</div>
+            <div id="stat-total-copies" class="text-[11px] text-emerald-600 font-semibold mt-0.5">0 Eksemplar Fisik</div>
+          </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl shrink-0">
+            <i class="fa-solid fa-hand-holding-hand"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-medium">Buku Sedang Dipinjam</div>
+            <div id="stat-active-loans" class="text-2xl font-extrabold text-slate-800">0</div>
+            <div id="stat-pending-bookings" class="text-[11px] text-amber-600 font-semibold mt-0.5">0 Booking Menunggu</div>
+          </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shrink-0">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-medium">Anggota Terdaftar</div>
+            <div id="stat-total-members" class="text-2xl font-extrabold text-slate-800">0</div>
+            <div class="text-[11px] text-slate-500 font-medium mt-0.5">Siswa & Guru Aktif</div>
+          </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl shrink-0">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-medium">Denda Keterlambatan</div>
+            <div id="stat-total-fines" class="text-xl font-extrabold text-rose-600">Rp 0</div>
+            <div class="text-[11px] text-rose-500 font-semibold mt-0.5">Perlu Tindak Lanjut</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Weekly Loan Trend Chart -->
+        <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-slate-800 text-sm">Tren Sirkulasi Peminjaman Mingguan</h3>
+              <p class="text-xs text-slate-400">Statistik aktivitas peminjaman dan pengembalian 6 hari terakhir</p>
+            </div>
+            <span class="text-xs px-2.5 py-1 bg-slate-100 rounded-lg text-slate-600 font-medium">Minggu Ini</span>
+          </div>
+          <div class="h-64">
+            <canvas id="chart-weekly-trend"></canvas>
+          </div>
+        </div>
+
+        <!-- Category Distribution Doughnut Chart -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-bold text-slate-800 text-sm">Distribusi Kategori Buku</h3>
+              <i class="fa-solid fa-chart-pie text-slate-400"></i>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">Porsi koleksi berdasarkan bidang ilmu</p>
+          </div>
+          <div class="h-56 relative">
+            <canvas id="chart-category-dist"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin Tab Section 1: Transaksi & Sirkulasi -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="font-bold text-base text-slate-800">Manajemen Sirkulasi & Antrean Booking</h3>
+            <p class="text-xs text-slate-400">Setujui pemesanan online saat siswa datang ke perpustakaan & catat pengembalian</p>
+          </div>
+          <span class="px-3 py-1 bg-purple-50 text-purple-700 border border-purple-200 rounded-full text-xs font-semibold">
+            Sinkronisasi Real-Time
+          </span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+              <tr>
+                <th class="px-4 py-3">Kode TRX</th>
+                <th class="px-4 py-3">Peminjam</th>
+                <th class="px-4 py-3">Judul Buku</th>
+                <th class="px-4 py-3">Tgl Pinjam</th>
+                <th class="px-4 py-3">Batas Kembali</th>
+                <th class="px-4 py-3">Status</th>
+                <th class="px-4 py-3 text-right">Aksi Pustakawan</th>
+              </tr>
+            </thead>
+            <tbody id="admin-transactions-tbody">
+              <!-- Rendered via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Admin Tab Section 2: Manajemen Koleksi Buku (CRUD) -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <h3 class="font-bold text-base text-slate-800">Katalog Master & Stok Buku (CRUD)</h3>
+            <p class="text-xs text-slate-400">Tambah koleksi baru, perbarui data buku, kelola stok fisik, dan hapus data buku</p>
+          </div>
+          <button onclick="document.getElementById('btn-add-book-modal').click()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition flex items-center gap-1.5">
+            <i class="fa-solid fa-plus"></i> Input Buku Baru
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+              <tr>
+                <th class="px-4 py-3">Koleksi Buku & ISBN</th>
+                <th class="px-4 py-3">Pengarang & Penerbit</th>
+                <th class="px-4 py-3">Lokasi Rak</th>
+                <th class="px-4 py-3 text-center">Stok (Tersedia / Total)</th>
+                <th class="px-4 py-3 text-right">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="admin-books-tbody">
+              <!-- Rendered via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ============================================================ -->
+    <!-- VIEW 5: PENGATURAN PROFIL PENGGUNA                          -->
+    <!-- ============================================================ -->
+    <section id="view-profil" class="hidden space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Profile Identity Card -->
+        <div class="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm flex flex-col items-center text-center">
+          <div class="relative mb-4">
+            <img id="profile-avatar-img" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150" alt="Profile" class="w-24 h-24 rounded-full object-cover ring-4 ring-blue-100 shadow-md" />
+            <span class="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-emerald-500 ring-2 ring-white flex items-center justify-center text-white text-[10px]">
+              <i class="fa-solid fa-check"></i>
+            </span>
+          </div>
+
+          <h3 id="profile-display-name" class="font-bold text-lg text-slate-800">Budi Pratama</h3>
+          <span id="profile-display-role" class="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 mt-1">SISWA</span>
+          <p id="profile-display-id" class="text-xs text-slate-400 font-mono mt-2">SIS-2024-101</p>
+
+          <!-- Reading Statistics -->
+          <div class="w-full grid grid-cols-3 gap-2 mt-6 pt-6 border-t border-slate-100 text-center">
+            <div class="p-2 rounded-xl bg-slate-50">
+              <div id="profile-stat-total-borrowed" class="font-bold text-base text-slate-800">0</div>
+              <div class="text-[10px] text-slate-400">Total Pinjam</div>
+            </div>
+            <div class="p-2 rounded-xl bg-emerald-50 text-emerald-800">
+              <div id="profile-stat-returned" class="font-bold text-base">0</div>
+              <div class="text-[10px]">Selesai</div>
+            </div>
+            <div class="p-2 rounded-xl bg-blue-50 text-blue-800">
+              <div id="profile-stat-active" class="font-bold text-base">0</div>
+              <div class="text-[10px]">Aktif</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Form Edit Profil & Kata Sandi -->
+        <div class="lg:col-span-2 bg-white rounded-3xl border border-slate-200/80 p-6 md:p-8 shadow-sm">
+          <div class="mb-6">
+            <h3 class="font-bold text-lg text-slate-800">Pengaturan Informasi Pengguna</h3>
+            <p class="text-xs text-slate-400">Perbarui informasi kontak dan kata sandi akun perpustakaan Anda</p>
+          </div>
+
+          <form id="form-user-profile" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Nama Lengkap</label>
+                <input type="text" id="profile-input-name" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor Induk (NIS/NIP)</label>
+                <input type="text" id="profile-input-id" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono bg-slate-50 text-slate-500 focus:outline-none" readonly>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Email Sekolah</label>
+                <input type="email" id="profile-input-email" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Nomor WhatsApp / HP</label>
+                <input type="tel" id="profile-input-phone" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">Kelas / Unit Kerja</label>
+              <input type="text" id="profile-input-dept" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+            </div>
+
+            <!-- Password Reset Section -->
+            <div class="pt-4 border-t border-slate-100">
+              <h4 class="font-bold text-xs text-slate-800 mb-3">Keamanan Akun</h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs text-slate-600 mb-1">Kata Sandi Baru</label>
+                  <input type="password" placeholder="Minimal 8 karakter" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+                <div>
+                  <label class="block text-xs text-slate-600 mb-1">Konfirmasi Kata Sandi Baru</label>
+                  <input type="password" placeholder="Ulangi kata sandi baru" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+              </div>
+            </div>
+
+            <div class="pt-4 flex justify-end">
+              <button type="submit" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center gap-2">
+                <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
+              </button>
+            </div>
+          </form>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ============================================================== -->
+  <!-- FOOTER                                                         -->
+  <!-- ============================================================== -->
+  <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-slate-500 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-slate-700">PustakaKita</span>
+        <span>• Solusi Modern Perpustakaan Sekolah Digital</span>
+      </div>
+      <div>
+        <span>Template UI/UX Prototype • Database Dump: <code class="text-blue-600 font-mono font-semibold">pustakakita_db</code></span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: DETAIL BUKU & PEMESANAN (BOOKING/HOLD)                  -->
+  <!-- ============================================================== -->
+  <div id="modal-book-detail" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl animate-fade-in flex flex-col max-h-[90vh]">
+      
+      <!-- Modal Header -->
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+          <h3 class="font-bold text-sm text-slate-800">Detail Koleksi Pustaka</h3>
+        </div>
+        <button id="btn-close-book-detail" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body (Scrollable) -->
+      <div class="p-6 overflow-y-auto space-y-6">
+        <div class="flex flex-col sm:flex-row gap-6">
+          <img id="modal-detail-img" src="" alt="Book Cover" class="w-36 h-52 object-cover rounded-xl shadow-lg border border-slate-200 shrink-0 self-center sm:self-start" />
+          
+          <div class="flex-1 space-y-2.5">
+            <div id="modal-detail-status-badge" class="inline-block"></div>
+            <h2 id="modal-detail-title" class="font-bold text-xl text-slate-900 leading-snug"></h2>
+            
+            <div class="text-xs space-y-1 text-slate-600 pt-1">
+              <div>Penulis: <strong id="modal-detail-author" class="text-slate-800"></strong></div>
+              <div>Penerbit: <strong id="modal-detail-publisher" class="text-slate-800"></strong> (<span id="modal-detail-year"></span>)</div>
+              <div>ISBN: <code id="modal-detail-isbn" class="font-mono text-blue-600 font-semibold"></code></div>
+              <div>Kategori: <span id="modal-detail-category" class="font-semibold text-slate-800"></span></div>
+              <div>Tebal: <span id="modal-detail-pages" class="text-slate-800 font-medium"></span></div>
+            </div>
+
+            <!-- Rak & Lokasi Fisik -->
+            <div class="bg-blue-50 p-3 rounded-xl border border-blue-100 mt-2">
+              <div class="text-[11px] font-bold text-blue-800 flex items-center gap-1.5 mb-0.5">
+                <i class="fa-solid fa-location-dot text-blue-600"></i> Lokasi Penyimpanan Fisik:
+              </div>
+              <div id="modal-detail-rak" class="text-xs font-semibold text-blue-900"></div>
+              <div id="modal-detail-stock" class="text-[11px] text-blue-700 mt-0.5"></div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="font-bold text-xs text-slate-800 mb-1.5">Sinopsis & Deskripsi Singkat</h4>
+          <p id="modal-detail-desc" class="text-xs text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-slate-100"></p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div id="modal-detail-action-container" class="p-5 border-t border-slate-100 bg-slate-50">
+        <!-- Action Button injected via JS -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: TAMBAH / EDIT DATA BUKU ADMIN                           -->
+  <!-- ============================================================== -->
+  <div id="modal-add-edit-book" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl animate-fade-in flex flex-col max-h-[90vh]">
+      
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+        <h3 id="modal-book-title-heading" class="font-bold text-base text-slate-800">Tambah Buku Baru</h3>
+        <button id="btn-close-book-form" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="form-manage-book" class="p-6 overflow-y-auto space-y-4">
+        <input type="hidden" id="form-book-id">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Judul Buku *</label>
+          <input type="text" id="form-book-title" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Masukkan judul buku lengkap">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Pengarang / Penulis *</label>
+            <input type="text" id="form-book-author" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Penerbit *</label>
+            <input type="text" id="form-book-publisher" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Tahun Terbit *</label>
+            <input type="number" id="form-book-year" value="2023" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">ISBN</label>
+            <input type="text" id="form-book-isbn" placeholder="978-602-xxx" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Stok Total *</label>
+            <input type="number" id="form-book-stock" min="1" value="5" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Kategori Buku *</label>
+            <select id="form-book-category" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              <!-- Populated via JS -->
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Lokasi Rak Fisik *</label>
+            <select id="form-book-rak" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              <!-- Populated via JS -->
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">Jumlah Halaman</label>
+            <input type="number" id="form-book-pages" value="300" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-700 mb-1">URL Sampul Gambar (Cover)</label>
+            <input type="url" id="form-book-cover" placeholder="https://..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Sinopsis / Ringkasan Buku</label>
+          <textarea id="form-book-desc" rows="3" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none" placeholder="Tuliskan deskripsi singkat koleksi ini..."></textarea>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <button type="button" onclick="document.getElementById('modal-add-edit-book').classList.add('hidden')" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-md transition">
+            Simpan Data Buku
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: TAMBAH REKOMENDASI GURU                                -->
+  <!-- ============================================================== -->
+  <div id="modal-add-rec" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl animate-fade-in flex flex-col">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+        <h3 class="font-bold text-base text-slate-800">Berikan Rekomendasi Bacaan Guru</h3>
+        <button id="btn-close-rec-modal" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="form-add-rec" class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Pilih Buku Koleksi *</label>
+          <select id="rec-select-book" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+            <!-- Populated via JS -->
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Sasaran / Target Kelas</label>
+          <input type="text" id="rec-input-target" placeholder="Contoh: Kelas XII RPL, Semua Siswa" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Catatan & Alasan Rekomendasi Guru *</label>
+          <textarea id="rec-input-note" rows="3" required placeholder="Jelaskan manfaat buku ini untuk materi pelajaran atau pengembangan wawasan siswa..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+        </div>
+
+        <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
+          <button type="button" onclick="document.getElementById('modal-add-rec').classList.add('hidden')" class="px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition">
+            Batal
+          </button>
+          <button type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md transition">
+            Terbitkan Rekomendasi
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL: PUSAT NOTIFIKASI & PENGINGAT                            -->
+  <!-- ============================================================== -->
+  <div id="notification-modal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-end">
+    <div class="bg-white h-full w-full max-w-md shadow-2xl animate-fade-in flex flex-col">
+      <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-bell text-blue-600"></i>
+          <h3 class="font-bold text-base text-slate-800">Notifikasi & Pengingat</h3>
+        </div>
+        <button id="btn-close-notif" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="px-5 py-2 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-xs">
+        <span class="text-slate-500 font-medium">Pengingat otomatis tenggat & booking</span>
+        <button id="btn-mark-all-read" class="text-blue-600 font-bold hover:underline">
+          Tandai Dibaca
+        </button>
+      </div>
+
+      <div id="notification-list-container" class="flex-1 overflow-y-auto">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- FLOATING TOAST NOTIFICATION CONTAINER                          -->
+  <!-- ============================================================== -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2.5 max-w-sm pointer-events-none">
+    <!-- Toasts dynamically appended here -->
+  </div>
+
+  <!-- Application Scripts -->
+  <script src="assets/js/data-dump.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
+
