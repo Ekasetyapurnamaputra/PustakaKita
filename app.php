@@ -1,3 +1,6 @@
+<?php
+if (session_status() !== PHP_SESSION_ACTIVE) { session_start(); }
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -41,37 +44,6 @@
 </head>
 <body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
 
-  <!-- ============================================================== -->
-  <!-- TOP ANNOUNCEMENT / SIMULATOR BANNER                           -->
-  <!-- ============================================================== -->
-  <div class="bg-slate-900 text-slate-200 text-xs py-2 px-4 border-b border-slate-800">
-    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-500/20 text-blue-300 font-semibold border border-blue-500/30">
-          <i class="fa-solid fa-database text-[10px]"></i> Mode Dump Data
-        </span>
-        <span class="hidden sm:inline text-slate-400">Siap dihubungkan ke PHP & MySQL (Database Dump: <code class="text-blue-300 font-mono">database/pustakakita.sql</code>)</span>
-      </div>
-
-      <div class="flex items-center gap-3 ml-auto">
-        <!-- Role Simulator Dropdown -->
-        <div class="flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
-          <label for="role-quick-switcher" class="text-slate-400 text-[11px] font-medium hidden md:inline">Ganti Pengguna Demo:</label>
-          <select id="role-quick-switcher" class="bg-transparent text-white font-medium text-xs focus:outline-none cursor-pointer">
-            <option value="3" class="bg-slate-900 text-white">👨‍🎓 Budi Pratama (Siswa - XII RPL 1)</option>
-            <option value="4" class="bg-slate-900 text-white">👩‍🎓 Siti Nurhaliza (Siswa - XI IPA 2)</option>
-            <option value="2" class="bg-slate-900 text-white">👨‍🏫 Drs. Hendra Gunawan (Guru Bahasa)</option>
-            <option value="1" class="bg-slate-900 text-white">👩‍💼 Dewi Sartika (Pustakawan / Admin)</option>
-          </select>
-        </div>
-
-        <!-- Reset Button -->
-        <button id="btn-reset-dump-data" class="text-[11px] text-slate-400 hover:text-white transition flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700" title="Reset ke data awal">
-          <i class="fa-solid fa-arrows-rotate"></i> <span class="hidden sm:inline">Reset Demo</span>
-        </button>
-      </div>
-    </div>
-  </div>
 
   <!-- ============================================================== -->
   <!-- MAIN NAVBAR                                                    -->
@@ -137,6 +109,8 @@
 
       </div>
     </div>
+
+    <a href="auth/logout.php" class="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-600 hover:text-white" title="Logout"><i class="fa-solid fa-right-from-bracket"></i><span class="hidden sm:inline">Logout</span></a>
 
     <!-- Mobile Navigation Bar -->
     <div class="md:hidden border-t border-slate-200 bg-white px-2 py-2 flex items-center justify-around text-xs">
@@ -847,6 +821,9 @@
   </div>
 
   <!-- Application Scripts -->
+  <script>
+    window.AUTH_USER = <?= json_encode($_SESSION['user'] ?? null, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
+  </script>
   <script src="assets/js/data-dump.js"></script>
   <script src="assets/js/app.js"></script>
 </body>

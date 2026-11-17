@@ -29,7 +29,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Current User Management
   function updateCurrentUser() {
-    state.currentUser = window.PustakaDB.getCurrentUser();
+    // User dari session PHP menjadi sumber identitas utama.
+    const sessionUser = window.AUTH_USER;
+    const dumpUser = sessionUser ? window.PustakaDB.getUsers().find(u => u.id_user === Number(sessionUser.id_user)) : null;
+    state.currentUser = sessionUser ? { ...(dumpUser || {}), ...sessionUser } : window.PustakaDB.getCurrentUser();
+    if (!state.currentUser) {
+      window.location.href = 'index.php';
+      return;
+    }
+    // Sinkronkan data dump agar fitur UI lama tetap dapat berjalan.
+    if (window.PustakaDB.getCurrentUserId() !== state.currentUser.id_user) {
+      window.PustakaDB.setCurrentUserId(state.currentUser.id_user);
+    }
     
     // Update Header Profile
     const avatarEl = el('nav-user-avatar');

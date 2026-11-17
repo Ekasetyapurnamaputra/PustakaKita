@@ -391,17 +391,54 @@ class PustakaDBEngine {
   }
 
   getCurrentUserId() {
-    return parseInt(localStorage.getItem(this.CURRENT_USER_KEY) || '3', 10);
+    const val = localStorage.getItem(this.CURRENT_USER_KEY);
+    return val ? parseInt(val, 10) : null;
   }
 
   getCurrentUser() {
     const users = this.getUsers();
     const id = this.getCurrentUserId();
-    return users.find(u => u.id_user === id) || users[2];
+    if (!id) return null;
+    return users.find(u => u.id_user === id) || null;
   }
 
   setCurrentUserId(id) {
-    localStorage.setItem(this.CURRENT_USER_KEY, id.toString());
+    if (id === null || id === 0) {
+      localStorage.removeItem(this.CURRENT_USER_KEY);
+    } else {
+      localStorage.setItem(this.CURRENT_USER_KEY, id.toString());
+    }
+  }
+
+  login(identifier, password) {
+    const users = this.getUsers();
+    const cleanId = identifier.trim().toLowerCase();
+    const user = users.find(u => 
+      u.email.toLowerCase() === cleanId || 
+      u.nis_nip.toLowerCase() === cleanId ||
+      u.nama_lengkap.toLowerCase().includes(cleanId)
+    );
+
+    if (!user) {
+      return { success: false, message: 'Akun dengan Email / NIS / NIP tersebut tidak ditemukan.' };
+    }
+
+    if (user.status_aktif !== 'aktif') {
+      return { success: false, message: 'Akun Anda sedang tidak aktif atau disuspend.' };
+    }
+
+    // Set current user session
+    this.setCurrentUserId(user.id_user);
+    return { success: true, user: user, message: `Login berhasil sebagai ${user.nama_lengkap} (${user.role.toUpperCase()})` };
+  }
+
+  logout() {
+    localStorage.removeItem(this.CURRENT_USER_KEY);
+    return { success: true, message: 'Berhasil keluar (Logout).' };
+  }
+
+  isLoggedIn() {
+    return this.getCurrentUserId() !== null && this.getCurrentUser() !== null;
   }
 
   // --- Categories & Raks ---
